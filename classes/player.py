@@ -1,11 +1,11 @@
 import pygame
-from settings import * # On importe nos constantes
+from settings import * 
 
 class Player:
     def __init__(self):
         # On utilise les constantes de settings.py
         self.image = pygame.Surface((PLAYER_SIZE, PLAYER_SIZE))
-        self.image.fill(BLUE_PLAYER)
+        self.image.fill(COLOR_PLAYER)
         
         # Le Rect gère la position et les collisions
         # On déballe le tuple (x, y) de la position de départ
