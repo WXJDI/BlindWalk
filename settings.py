@@ -13,8 +13,10 @@ BLACK = (0, 0, 0)
 RED_DANGER = (255, 0, 0)
 GREEN_GRASS = (50, 200, 50)
 BLUE_PLAYER = (0, 100, 255)
+YELLOW_GOAL = (255, 215, 0)  # <-- NOUVEAU : Couleur de la sortie (Or)
 
 # --- Paramètres du Joueur ---
 PLAYER_SIZE = 30
 PLAYER_SPEED = 4
-PLAYER_START_POS = (50, 300) # (x, y)
+# On le place en bas au centre (Largeur/2, Hauteur - 50 pixels)
+PLAYER_START_POS = (SCREEN_WIDTH // 2 - 15, SCREEN_HEIGHT - 50)
