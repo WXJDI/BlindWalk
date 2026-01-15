@@ -1,11 +1,12 @@
 import pygame
 import sys
+import os # <--- TRES IMPORTANT ne l'oublie pas
 import random
 from settings import *
 from classes.player import Player
 from classes.obstacle import Obstacle
-from classes.mud import Mud
 from classes.stone import Stone
+from classes.mud import Mud
 
 class Game:
     def __init__(self):
@@ -16,9 +17,12 @@ class Game:
         self.running = True
         self.game_over = False
         
-        # Polices
         self.font = pygame.font.SysFont("Arial", 18, bold=True)
         self.game_over_font = pygame.font.SysFont("Arial", 64, bold=True)
+        
+        # --- PREPARATION DU BACKGROUND (NOUVEAU) ---
+        self.background_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.load_background() # On appelle la fonction de chargement
         
         # UI
         self.current_filter = 0
@@ -29,12 +33,34 @@ class Game:
         self.player = Player()
         self.goal = pygame.Rect(SCREEN_WIDTH // 2 - 50, 0, 100, 20)
         
-        # Listes de pièges
-        self.traps_a = [] # Ex-Obstacles (Rouges)
-        self.traps_b = [] # Ex-Stones (Bleus)
-        self.traps_c = [] # Ex-Muds (Iso/Orange)
+        self.traps_a = []
+        self.traps_b = []
+        self.traps_c = []
         
         self.create_map()
+
+    def load_background(self):
+        # 1. Charger l'image de l'herbe
+        try:
+            grass_path = os.path.join('assets', 'images', 'tiles', 'grass.png')
+            grass_img = pygame.image.load(grass_path).convert()
+        except FileNotFoundError:
+            print("Erreur: Image grass.png introuvable. Fond noir par défaut.")
+            return
+
+        # 2. Remplir une grande surface avec cette tuile (Tiling)
+        # On boucle pour coller l'image partout sur l'écran (800x600)
+        tile_w = grass_img.get_width()
+        tile_h = grass_img.get_height()
+        
+        for y in range(0, SCREEN_HEIGHT, tile_h):
+            for x in range(0, SCREEN_WIDTH, tile_w):
+                self.background_surf.blit(grass_img, (x, y))
+        
+        # 3. Transformer en Niveaux de Gris (Grayscale)
+        # C'est l'astuce ! Une image grise prend parfaitement la couleur qu'on lui applique ensuite.
+        # (Cette fonction existe depuis Pygame 2.1.4, tu as la 2.6.1 donc c'est bon)
+        self.background_surf = pygame.transform.grayscale(self.background_surf)
 
     def create_ui_buttons(self):
         # On raccourcit les textes pour que ça rentre
@@ -132,38 +158,49 @@ class Game:
 
     def draw(self):
         palette = FILTERS[self.current_filter]
+        
+        # 1. Dessin du fond texturé et coloré (Ça c'est parfait, on garde)
         self.screen.fill(palette["bg"])
+        self.screen.blit(self.background_surf, (0, 0), special_flags=pygame.BLEND_MULT)
         
         pygame.draw.rect(self.screen, palette["goal"], self.goal)
         
-        # --- DESSIN DES PIÈGES ---
-        # Petite astuce : En mode Achromatopsie (3), on dessine un contour noir 
-        # pour simuler la vision des "Formes/Reliefs" sur les pièges visibles.
+        # --- LOGIQUE DE CAMOUFLAGE ---
+        # Au lieu de juste changer la couleur, on vérifie si le piège doit être visible.
+        
+        # Mode 3 (Achromatopsie) : On active le contour pour voir les formes
         show_outline = (self.current_filter == 3)
 
-        # 1. Pièges A (Rouges)
-        for trap in self.traps_a:
-            pygame.draw.rect(self.screen, palette["trap_a"], trap.rect)
-            if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
+        # 1. Pièges A (ROUGES)
+        # Ils sont INVISIBLES si on est en Mode 1 (Deutéranopie)
+        if self.current_filter != 1: 
+            for trap in self.traps_a:
+                pygame.draw.rect(self.screen, palette["trap_a"], trap.rect)
+                if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
 
-        # 2. Pièges B (Bleus)
-        for trap in self.traps_b:
-            pygame.draw.rect(self.screen, palette["trap_b"], trap.rect)
-            if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
+        # 2. Pièges B (BLEUS)
+        # Ils sont INVISIBLES si on est en Mode 2 (Tritanopie)
+        if self.current_filter != 2:
+            for trap in self.traps_b:
+                pygame.draw.rect(self.screen, palette["trap_b"], trap.rect)
+                if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
 
-        # 3. Pièges C (Iso)
-        for trap in self.traps_c:
-            pygame.draw.rect(self.screen, palette["trap_c"], trap.rect)
-            # Pas de contour sur celui-ci en mode 3 car il est censé être invisible !
-            
-        pygame.draw.rect(self.screen, palette["player"], self.player.rect)
+        # 3. Pièges C (ISO-LUMINANTS / ORANGE)
+        # Ils sont INVISIBLES si on est en Mode 3 (Achromatopsie)
+        # (Car ils ont le même gris que le sol, donc on les cache complètement)
+        if self.current_filter != 3:
+            for trap in self.traps_c:
+                pygame.draw.rect(self.screen, palette["trap_c"], trap.rect)
+
+        # 4. Joueur et Interface
+        self.player.draw(self.screen)
         self.draw_ui()
 
         if self.game_over:
             self.draw_game_over()
 
         pygame.display.flip()
-
+        
     def draw_ui(self):
         # Fond semi-transparent pour le menu du bas
         menu_bg = pygame.Surface((SCREEN_WIDTH, 50))
