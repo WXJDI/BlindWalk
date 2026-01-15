@@ -4,6 +4,8 @@ import random
 from settings import *
 from classes.player import Player
 from classes.obstacle import Obstacle
+from classes.mud import Mud
+from classes.stone import Stone
 
 class Game:
     def __init__(self):
@@ -12,135 +14,189 @@ class Game:
         pygame.display.set_caption(TITLE)
         self.clock = pygame.time.Clock()
         self.running = True
+        self.game_over = False
         
-        # --- ETAT DU JEU ---
-        self.game_over = False  # Nouvelle variable pour savoir si on a perdu
-        
-        # UI & Fontes
-        self.font = pygame.font.SysFont("Arial", 20)
+        # Polices
+        self.font = pygame.font.SysFont("Arial", 18, bold=True)
         self.game_over_font = pygame.font.SysFont("Arial", 64, bold=True)
         
-        # Filtres
+        # UI
         self.current_filter = 0
         self.buttons = []
         self.create_ui_buttons()
 
-        # Objets du jeu
+        # Jeu
         self.player = Player()
         self.goal = pygame.Rect(SCREEN_WIDTH // 2 - 50, 0, 100, 20)
-        self.obstacles = []
+        
+        # Listes de pièges
+        self.traps_a = [] # Ex-Obstacles (Rouges)
+        self.traps_b = [] # Ex-Stones (Bleus)
+        self.traps_c = [] # Ex-Muds (Iso/Orange)
+        
         self.create_map()
 
     def create_ui_buttons(self):
-        # Création des boutons de filtre (comme vu précédemment)
-        options = [(0, "1: Normal"), (1, "2: Protanope"), (2, "3: Gris")]
-        offset_x = 10
-        y_pos = SCREEN_HEIGHT - 30
+        # On raccourcit les textes pour que ça rentre
+        options = [
+            (0, "1: Normal"), 
+            (1, "2: Deuteranopie"), 
+            (2, "3: Tritanopie"), 
+            (3, "4: Achromatopsie")
+        ]
         
+        # Centrage des boutons
+        total_width = sum([len(t)*10 for i, t in options]) # estimation
+        start_x = (SCREEN_WIDTH - 600) // 2
+        offset_x = 20
+        y_pos = SCREEN_HEIGHT - 40
+        
+        self.buttons = []
         for mode_id, text_str in options:
             text_surf = self.font.render(text_str, True, WHITE)
             w, h = text_surf.get_size()
-            rect = pygame.Rect(offset_x, y_pos, w, h)
+            rect = pygame.Rect(offset_x, y_pos, w + 10, h + 10) # Zone plus large
             self.buttons.append({"rect": rect, "text": text_str, "id": mode_id})
-            offset_x += 130
+            offset_x += w + 40
 
     def create_map(self):
-        self.obstacles = []
-        for _ in range(15):
+        self.traps_a = []
+        self.traps_b = []
+        self.traps_c = []
+        
+        # On génère BEAUCOUP de pièges pour forcer l'utilisation des filtres
+        # A. Pièges ROUGES (Invisible Mode 1)
+        for _ in range(10):
             x = random.randint(0, SCREEN_WIDTH - 50)
             y = random.randint(50, SCREEN_HEIGHT - 100)
-            w = random.randint(30, 80)
-            h = random.randint(30, 80)
-            self.obstacles.append(Obstacle(x, y, w, h))
+            self.traps_a.append(Obstacle(x, y, random.randint(30, 60), random.randint(30, 60)))
+
+        # B. Pièges BLEUS (Invisible Mode 2)
+        for _ in range(10):
+            x = random.randint(0, SCREEN_WIDTH - 50)
+            y = random.randint(50, SCREEN_HEIGHT - 100)
+            self.traps_b.append(Stone(x, y, random.randint(30, 60), random.randint(30, 60)))
+
+        # C. Pièges ISO (Invisible Mode 3)
+        for _ in range(10):
+            x = random.randint(0, SCREEN_WIDTH - 50)
+            y = random.randint(50, SCREEN_HEIGHT - 100)
+            self.traps_c.append(Mud(x, y, random.randint(30, 60), random.randint(30, 60)))
 
     def handle_input(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
             
-            # --- INPUTS SI GAME OVER ---
             if self.game_over:
-                if event.type == pygame.KEYDOWN and event.key == pygame.K_r:
-                    # Touche R pour recommencer
-                    self.game_over = False
-                    self.player.reset()
-                    self.create_map() # Nouvelle carte
-                continue # On ignore les autres touches si on est mort
+                if event.type == pygame.KEYDOWN:
+                    if event.key == pygame.K_r:
+                        self.game_over = False
+                        self.player.reset()
+                    elif event.key == pygame.K_n:
+                        self.game_over = False
+                        self.player.reset()
+                        self.create_map()
+                continue
 
-            # --- INPUTS NORMAUX (Jeu en cours) ---
+            # Clics Souris
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 for btn in self.buttons:
                     if btn["rect"].collidepoint(event.pos):
                         self.current_filter = btn["id"]
 
+            # Raccourcis Clavier
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_1: self.current_filter = 0
                 elif event.key == pygame.K_2: self.current_filter = 1
                 elif event.key == pygame.K_3: self.current_filter = 2
+                elif event.key == pygame.K_4: self.current_filter = 3
 
-        # Le joueur ne bouge que si le jeu n'est PAS fini
         if not self.game_over:
             self.player.move()
 
     def update(self):
-        if self.game_over:
-            return # On ne calcule rien si le jeu est fini
+        if self.game_over: return
 
-        # Victoire
         if self.player.rect.colliderect(self.goal):
             print("GAGNÉ !")
             self.player.reset()
             self.create_map()
 
-        # Défaite (Game Over)
-        for obstacle in self.obstacles:
-            if self.player.rect.colliderect(obstacle.rect):
-                print("GAME OVER !")
-                self.game_over = True # <--- C'est ici que tout s'arrête
-                # On ne reset PAS le joueur, on fige le jeu
-
-    def draw_ui(self):
-        for btn in self.buttons:
-            color = WHITE if self.current_filter == btn["id"] else (100, 100, 100)
-            text_surf = self.font.render(btn["text"], True, color)
-            self.screen.blit(text_surf, btn["rect"])
-
-    def draw_game_over(self):
-        # Affiche un écran sombre transparent
-        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
-        overlay.set_alpha(180) # Transparence
-        overlay.fill(BLACK)
-        self.screen.blit(overlay, (0, 0))
-        
-        # Texte GAME OVER
-        text = self.game_over_font.render("GAME OVER", True, RED_DANGER)
-        rect = text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 20))
-        self.screen.blit(text, rect)
-        
-        # Texte "Rejouer"
-        retry_text = self.font.render("Appuie sur 'R' pour recommencer", True, WHITE)
-        retry_rect = retry_text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 40))
-        self.screen.blit(retry_text, retry_rect)
+        # TOUS LES PIÈGES SONT MORTELS MAINTENANT
+        all_traps = self.traps_a + self.traps_b + self.traps_c
+        for trap in all_traps:
+            if self.player.rect.colliderect(trap.rect):
+                self.game_over = True
+                break
 
     def draw(self):
         palette = FILTERS[self.current_filter]
-        
-        # Dessin du jeu normal
         self.screen.fill(palette["bg"])
+        
         pygame.draw.rect(self.screen, palette["goal"], self.goal)
         
-        for obstacle in self.obstacles:
-            # On utilise la couleur dynamique du filtre
-            pygame.draw.rect(self.screen, palette["obstacle"], obstacle.rect)
+        # --- DESSIN DES PIÈGES ---
+        # Petite astuce : En mode Achromatopsie (3), on dessine un contour noir 
+        # pour simuler la vision des "Formes/Reliefs" sur les pièges visibles.
+        show_outline = (self.current_filter == 3)
+
+        # 1. Pièges A (Rouges)
+        for trap in self.traps_a:
+            pygame.draw.rect(self.screen, palette["trap_a"], trap.rect)
+            if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
+
+        # 2. Pièges B (Bleus)
+        for trap in self.traps_b:
+            pygame.draw.rect(self.screen, palette["trap_b"], trap.rect)
+            if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
+
+        # 3. Pièges C (Iso)
+        for trap in self.traps_c:
+            pygame.draw.rect(self.screen, palette["trap_c"], trap.rect)
+            # Pas de contour sur celui-ci en mode 3 car il est censé être invisible !
             
         pygame.draw.rect(self.screen, palette["player"], self.player.rect)
         self.draw_ui()
 
-        # Si Game Over, on dessine l'écran de fin PAR DESSUS
         if self.game_over:
             self.draw_game_over()
 
         pygame.display.flip()
+
+    def draw_ui(self):
+        # Fond semi-transparent pour le menu du bas
+        menu_bg = pygame.Surface((SCREEN_WIDTH, 50))
+        menu_bg.set_alpha(100)
+        menu_bg.fill(BLACK)
+        self.screen.blit(menu_bg, (0, SCREEN_HEIGHT - 50))
+
+        for btn in self.buttons:
+            color = WHITE if self.current_filter == btn["id"] else GRAY_TEXT
+            text_surf = self.font.render(btn["text"], True, color)
+            # Centrer le texte dans le bouton
+            text_rect = text_surf.get_rect(center=btn["rect"].center)
+            self.screen.blit(text_surf, text_rect)
+            
+            # Petit cadre si actif
+            if self.current_filter == btn["id"]:
+                pygame.draw.rect(self.screen, WHITE, btn["rect"], 1)
+
+    def draw_game_over(self):
+        overlay = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+        overlay.set_alpha(200)
+        overlay.fill(BLACK)
+        self.screen.blit(overlay, (0, 0))
+        
+        col = COLOR_TRAP_A # Rouge
+        text = self.game_over_font.render("GAME OVER", True, col)
+        rect = text.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 - 50))
+        self.screen.blit(text, rect)
+        
+        font_small = pygame.font.SysFont("Arial", 24)
+        txt_retry = font_small.render("[R] Réessayer   [N] Nouveau", True, WHITE)
+        rect_retry = txt_retry.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT//2 + 40))
+        self.screen.blit(txt_retry, rect_retry)
 
     def run(self):
         while self.running:

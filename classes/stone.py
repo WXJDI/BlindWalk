@@ -1,11 +1,11 @@
 import pygame
 from settings import *
 
-class Obstacle:
+class Stone:
     def __init__(self, x, y, width, height):
         self.image = pygame.Surface((width, height))
-        # On utilise la constante définie dans le nouveau settings.py
-        self.image.fill(COLOR_TRAP_A) 
+        # Piège Bleu
+        self.image.fill(COLOR_TRAP_B) 
         self.rect = self.image.get_rect(topleft=(x, y))
 
     def draw(self, screen):
