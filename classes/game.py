@@ -11,8 +11,10 @@ from classes.mud import Mud
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
         pygame.display.set_caption(TITLE)
+        self.play_music()
         self.clock = pygame.time.Clock()
         self.running = True
         self.game_over = False
@@ -243,3 +245,25 @@ class Game:
             self.clock.tick(FPS)
         pygame.quit()
         sys.exit()
+
+
+    def play_music(self):
+            # On construit le chemin vers le fichier (adapte l'extension .mp3 ou .wav si besoin)
+            music_path = os.path.join('assets', 'sounds', 'music.mp3')
+            
+            try:
+                # 1. Charger la musique
+                pygame.mixer.music.load(music_path)
+                
+                # 2. Régler le volume (0.0 à 1.0)
+                # Mettons 0.3 (30%) pour ne pas casser les oreilles
+                pygame.mixer.music.set_volume(0.2)
+                
+                # 3. Jouer en boucle (-1 veut dire "infini")
+                pygame.mixer.music.play(-1)
+                
+                print("Musique lancée avec succès !")
+                
+            except pygame.error as e:
+                print(f"Erreur musique : Impossible de charger {music_path}")
+                print(f"Détail : {e}")
