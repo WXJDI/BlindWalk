@@ -65,16 +65,15 @@ class Game:
         self.background_surf = pygame.transform.grayscale(self.background_surf)
 
     def create_ui_buttons(self):
-        # On raccourcit les textes pour que ça rentre
+        # On a plus que 3 modes maintenant
         options = [
-            (0, "1: Normal"), 
-            (1, "2: Deuteranopie"), 
-            (2, "3: Tritanopie"), 
-            (3, "4: Achromatopsie")
+            (0, "1: Deuteranopie"), 
+            (1, "2: Tritanopie"), 
+            (2, "3: Achromatopsie")
         ]
         
         # Centrage des boutons
-        total_width = sum([len(t)*10 for i, t in options]) # estimation
+        total_width = sum([len(t)*10 for i, t in options])
         start_x = (SCREEN_WIDTH - 600) // 2
         offset_x = 20
         y_pos = SCREEN_HEIGHT - 40
@@ -83,7 +82,7 @@ class Game:
         for mode_id, text_str in options:
             text_surf = self.font.render(text_str, True, WHITE)
             w, h = text_surf.get_size()
-            rect = pygame.Rect(offset_x, y_pos, w + 10, h + 10) # Zone plus large
+            rect = pygame.Rect(offset_x, y_pos, w + 10, h + 10)
             self.buttons.append({"rect": rect, "text": text_str, "id": mode_id})
             offset_x += w + 40
 
@@ -134,11 +133,14 @@ class Game:
                         self.current_filter = btn["id"]
 
             # Raccourcis Clavier
+           # Raccourcis Clavier
             if event.type == pygame.KEYDOWN:
+                # Touche 1 -> Mode 0 (Deuteranopie)
                 if event.key == pygame.K_1: self.current_filter = 0
+                # Touche 2 -> Mode 1 (Tritanopie)
                 elif event.key == pygame.K_2: self.current_filter = 1
+                # Touche 3 -> Mode 2 (Achromatopsie)
                 elif event.key == pygame.K_3: self.current_filter = 2
-                elif event.key == pygame.K_4: self.current_filter = 3
 
         if not self.game_over:
             self.player.move()
@@ -161,40 +163,38 @@ class Game:
     def draw(self):
         palette = FILTERS[self.current_filter]
         
-        # 1. Dessin du fond texturé et coloré (Ça c'est parfait, on garde)
+        # Fond
         self.screen.fill(palette["bg"])
         self.screen.blit(self.background_surf, (0, 0), special_flags=pygame.BLEND_MULT)
         
         pygame.draw.rect(self.screen, palette["goal"], self.goal)
         
-        # --- LOGIQUE DE CAMOUFLAGE ---
-        # Au lieu de juste changer la couleur, on vérifie si le piège doit être visible.
+        # --- LOGIQUE DE CAMOUFLAGE (MISE A JOUR) ---
         
-        # Mode 3 (Achromatopsie) : On active le contour pour voir les formes
-        show_outline = (self.current_filter == 3)
+        # Contour visible seulement en mode Achromatopsie (qui est maintenant le mode 2)
+        show_outline = (self.current_filter == 2)
 
         # 1. Pièges A (ROUGES)
-        # Ils sont INVISIBLES si on est en Mode 1 (Deutéranopie)
-        if self.current_filter != 1: 
+        # INVISIBLES si on est en Mode 0 (Deutéranopie)
+        if self.current_filter != 0: 
             for trap in self.traps_a:
                 pygame.draw.rect(self.screen, palette["trap_a"], trap.rect)
                 if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
 
         # 2. Pièges B (BLEUS)
-        # Ils sont INVISIBLES si on est en Mode 2 (Tritanopie)
-        if self.current_filter != 2:
+        # INVISIBLES si on est en Mode 1 (Tritanopie)
+        if self.current_filter != 1:
             for trap in self.traps_b:
                 pygame.draw.rect(self.screen, palette["trap_b"], trap.rect)
                 if show_outline: pygame.draw.rect(self.screen, BLACK, trap.rect, 1)
 
-        # 3. Pièges C (ISO-LUMINANTS / ORANGE)
-        # Ils sont INVISIBLES si on est en Mode 3 (Achromatopsie)
-        # (Car ils ont le même gris que le sol, donc on les cache complètement)
-        if self.current_filter != 3:
+        # 3. Pièges C (ISO / ORANGE)
+        # INVISIBLES si on est en Mode 2 (Achromatopsie)
+        if self.current_filter != 2:
             for trap in self.traps_c:
                 pygame.draw.rect(self.screen, palette["trap_c"], trap.rect)
 
-        # 4. Joueur et Interface
+        # Joueur et UI
         self.player.draw(self.screen)
         self.draw_ui()
 

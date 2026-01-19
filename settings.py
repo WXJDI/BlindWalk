@@ -32,44 +32,34 @@ COLOR_PLAYER = (255, 255, 255) # Blanc pur (Toujours visible)
 # --- LES LUNETTES (PALETTES) ---
 FILTERS = {
     0: { 
-        "name": "Normal (Yeux Nus)",
-        "bg": COLOR_BG_NORMAL,
-        "trap_a": COLOR_TRAP_A, # Rouge Tomate
-        "trap_b": COLOR_TRAP_B, # Bleu Roi
-        "trap_c": COLOR_TRAP_C, # Orange
-        "goal": COLOR_GOAL,
-        "player": COLOR_PLAYER
-    },
-    
-    1: { 
         "name": "Deuteranopie (Vert/Rouge)",
-        # ILLUSION : Le Rouge devient comme le fond (Jaune/Moutarde)
+        # Le Rouge (Trap A) devient comme le fond -> INVISIBLE
         "bg": (160, 150, 60),           
-        "trap_a": (160, 150, 60), # MATCH TOTAL -> INVISIBLE
-        "trap_b": (80, 100, 180), # Le Bleu reste foncé -> VISIBLE
-        "trap_c": (180, 140, 60), # L'Orange reste différent -> VISIBLE
+        "trap_a": (160, 150, 60), # Camouflé
+        "trap_b": (80, 100, 180), # Visible
+        "trap_c": (180, 140, 60), # Visible
         "goal": (220, 220, 100),
         "player": (240, 240, 240)
     },
     
-    2: { 
+    1: { 
         "name": "Tritanopie (Bleu/Jaune)",
-        # ILLUSION : Le Bleu devient comme le fond (Turquoise sombre)
+        # Le Bleu (Trap B) devient comme le fond -> INVISIBLE
         "bg": (100, 130, 130),            
-        "trap_a": (255, 110, 110), # Le Rouge devient Rose vif -> TRES VISIBLE
-        "trap_b": (100, 130, 130), # MATCH TOTAL -> INVISIBLE
-        "trap_c": (200, 120, 120), # L'Orange devient Rose saumon -> VISIBLE
+        "trap_a": (255, 110, 110), # Visible
+        "trap_b": (100, 130, 130), # Camouflé
+        "trap_c": (200, 120, 120), # Visible
         "goal": (200, 160, 160),
         "player": (240, 240, 240)
     },
     
-    3: { 
+    2: { 
         "name": "Achromatopsie (Formes)",
-        # ILLUSION : Iso-luminance. Piège C a le même gris que le sol.
-        "bg": (115, 115, 115),     # Gris Moyen
-        "trap_a": (150, 150, 150), # Gris Clair (Visible)
-        "trap_b": (80, 80, 80),    # Gris Foncé (Visible)
-        "trap_c": (115, 115, 115), # MATCH TOTAL -> INVISIBLE
+        # L'Orange (Trap C) a la même luminosité que le fond -> INVISIBLE
+        "bg": (115, 115, 115),     
+        "trap_a": (150, 150, 150), # Visible
+        "trap_b": (80, 80, 80),    # Visible
+        "trap_c": (115, 115, 115), # Camouflé
         "goal": (220, 220, 220),
         "player": (255, 255, 255)
     }
