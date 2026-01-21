@@ -18,38 +18,31 @@ class Game:
         self.clock = pygame.time.Clock()
         self.running = True
         
-        # --- ETAT DU JEU ---
-        # "MENU" = L'écran d'accueil
-        # "PLAYING" = Le jeu commence
+
         self.game_state = "MENU" 
         self.game_over = False
+        self.level_count = 0 
+        self.max_levels = 3  
         
-        # --- POLICES RETRO ---
-        # "Courier New" donne un look machine à écrire / terminal très rétro
         self.font_retro_title = pygame.font.SysFont("Courier New", 50, bold=True)
-        self.font_retro_text = pygame.font.SysFont("Courier New", 20, bold=True)
+        self.font_retro_text = pygame.font.SysFont("Courier New", 18, bold=True) 
         self.font_retro_btn = pygame.font.SysFont("Courier New", 30, bold=True)
         self.font_retro_msg = pygame.font.SysFont("Courier New", 14, bold=False, italic=True)
         
-        # UI Jeu (Garder l'ancienne police pour l'interface en bas)
         self.font = pygame.font.SysFont("Arial", 18, bold=True)
         self.game_over_font = pygame.font.SysFont("Arial", 64, bold=True)
         
-        # --- CHARGEMENT DU BACKGROUND ---
         self.background_surf = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
         self.load_background()
-        
-        # --- CHARGEMENT MUSIQUE ---
         self.play_music()
 
-        # --- IMAGES VICTOIRE ---
         try:
             heart_path = os.path.join('assets', 'images', 'tiles', 'heart.png')
             flag_path = os.path.join('assets', 'images', 'tiles', 'flag.png')
             self.heart_img = pygame.image.load(heart_path).convert_alpha()
             self.flag_img = pygame.image.load(flag_path).convert_alpha()
         except FileNotFoundError:
-            print("ERREUR CRITIQUE : Images de victoire manquantes.")
+            print("ERREUR : Manque heart.png ou flag.png")
             sys.exit()
 
         # Calcul positions victoire
@@ -69,9 +62,6 @@ class Game:
         self.current_filter = 0
         self.buttons = []
         self.create_ui_buttons()
-        
-        # --- BOUTON START DU MENU ---
-        # On crée un rectangle pour le bouton "START"
         self.start_btn_rect = pygame.Rect(SCREEN_WIDTH//2 - 100, SCREEN_HEIGHT - 100, 200, 50)
 
         # Jeu
@@ -79,7 +69,6 @@ class Game:
         self.traps_a = []
         self.traps_b = []
         self.traps_c = []
-        self.create_map()
 
     def load_background(self):
         try:
@@ -126,17 +115,19 @@ class Game:
         self.traps_b = []
         self.traps_c = []
         
-        for _ in range(10):
+        nb_traps = 10 + (self.level_count * 2) 
+
+        for _ in range(nb_traps):
             x = random.randint(0, SCREEN_WIDTH - 50)
             y = random.randint(50, SCREEN_HEIGHT - 100)
             self.traps_a.append(Obstacle(x, y, random.randint(30, 60), random.randint(30, 60)))
 
-        for _ in range(10):
+        for _ in range(nb_traps):
             x = random.randint(0, SCREEN_WIDTH - 50)
             y = random.randint(50, SCREEN_HEIGHT - 100)
             self.traps_b.append(Stone(x, y, random.randint(30, 60), random.randint(30, 60)))
 
-        for _ in range(10):
+        for _ in range(nb_traps):
             x = random.randint(0, SCREEN_WIDTH - 50)
             y = random.randint(50, SCREEN_HEIGHT - 100)
             self.traps_c.append(Mud(x, y, random.randint(30, 60), random.randint(30, 60)))
@@ -146,27 +137,30 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
 
-            # --- GESTION DU MENU D'ACCUEIL ---
+    
+            if self.game_state == "VICTORY":
+                if event.type == pygame.KEYDOWN:
+                    
+                    self.game_state = "MENU"
+                    self.level_count = 0
+                return
+
+            # --- MENU ---
             if self.game_state == "MENU":
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    # Si on clique sur le bouton START
                     if self.start_btn_rect.collidepoint(event.pos):
-                        self.game_state = "PLAYING" # On lance le jeu !
-                
-                # Optionnel : Appuyer sur ENTRÉE pour commencer aussi
-                if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_RETURN:
-                        self.game_state = "PLAYING"
-                
-                return # On arrête la lecture des inputs ici si on est dans le menu
+                        self.start_game()
+                if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                    self.start_game()
+                return
 
-            # --- GESTION EN JEU ---
+            # --- JEU ---
             if self.game_over:
                 if event.type == pygame.KEYDOWN:
-                    if event.key == pygame.K_r:
+                    if event.key == pygame.K_r: 
                         self.game_over = False
                         self.player.reset()
-                    elif event.key == pygame.K_n:
+                    elif event.key == pygame.K_n: 
                         self.game_over = False
                         self.player.reset()
                         self.create_map()
@@ -185,41 +179,81 @@ class Game:
         if self.game_state == "PLAYING" and not self.game_over:
             self.player.move()
 
+    def start_game(self):
+        self.game_state = "PLAYING"
+        self.level_count = 0
+        self.player.reset()
+        self.create_map()
+
     def update(self):
-        if self.game_state == "MENU": return # Rien ne bouge dans le menu
+        if self.game_state != "PLAYING": return
         if self.game_over: return
 
         if self.player.rect.colliderect(self.goal_hitbox):
-            print("GAGNÉ !")
-            self.player.reset()
-            self.create_map()
-
-        # Collisions pièges
+            print("NIVEAU GAGNÉ !")
+            self.level_count += 1
+            
+            if self.level_count >= self.max_levels:
+                self.game_state = "VICTORY"
+            else:
+                self.player.reset()
+                self.create_map()
+                
         all_traps = self.traps_a + self.traps_b + self.traps_c
         for trap in all_traps:
             if self.player.rect.colliderect(trap.rect):
                 self.game_over = True
                 break
 
-    # --- NOUVELLE FONCTION : DESSINER LE MENU ---
-    def draw_menu(self):
-        # 1. Fond noir retro
+    def draw_victory(self):
         self.screen.fill(BLACK)
         
-        # 2. Titre du jeu
-        title = self.font_retro_title.render("BLIND WALK", True, (0, 255, 0)) # Vert Hacker
+        title = self.font_retro_title.render("MISSION ACCOMPLIE !", True, (255, 215, 0)) # Or
         rect_title = title.get_rect(center=(SCREEN_WIDTH//2, 80))
         self.screen.blit(title, rect_title)
         
-        # 3. Les instructions (Règles du jeu)
+        messages = [
+            "Bravo. Vous avez réussi à vous adapter.",
+            "Vous avez utilisé des filtres pour contourner les obstacles.",
+            "",
+            "MAIS SOUVENEZ-VOUS :",
+            "Dans la vraie vie, on ne peut pas changer de filtre.",
+            "Le daltonisme et la malvoyance ne sont pas des options.",
+            "Ils sont vécus chaque jour, sans bouton 'Pause' ou 'Reset'.",
+            "",
+            "Soyons attentifs. Construisons un monde plus inclusif.",
+            "Où le danger n'est invisible pour personne.",
+        ]
+        
+        start_y = 160
+        for i, line in enumerate(messages):
+            col = (0, 255, 255) if i > 3 else WHITE
+            
+            text = self.font_retro_text.render(line, True, col)
+            rect = text.get_rect(center=(SCREEN_WIDTH//2, start_y))
+            self.screen.blit(text, rect)
+            start_y += 35
+
+        txt_quit = self.font_retro_btn.render("[APPUYEZ SUR UNE TOUCHE]", True, GRAY_TEXT)
+        rect_quit = txt_quit.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT - 50))
+        self.screen.blit(txt_quit, rect_quit)
+
+        pygame.display.flip()
+
+    def draw_menu(self):
+        self.screen.fill(BLACK)
+        title = self.font_retro_title.render("BLIND WALK", True, (0, 255, 0))
+        rect_title = title.get_rect(center=(SCREEN_WIDTH//2, 80))
+        self.screen.blit(title, rect_title)
+        
         instructions = [
-            "MISSION : ATTEINDRE LE DRAPEAU",
+            "MISSION : SURVIVRE A 3 NIVEAUX",
             "------------------------------",
             "1. DEUTERANOPIE : Cache les pièges ROUGES",
             "2. TRITANOPIE   : Cache les pièges BLEUS",
             "3. ACHROMATOPSIE: Cache les pièges ORANGES",
             "",
-            "MEMORISEZ LE CHEMIN. CHANGEZ DE VUE. SURVIVEZ.",
+            "MEMORISEZ LE CHEMIN. CHANGEZ DE VUE.",
         ]
         
         start_y = 160
@@ -229,47 +263,41 @@ class Game:
             self.screen.blit(text, rect)
             start_y += 30
 
-        # 4. Le Bouton START
         pygame.draw.rect(self.screen, WHITE, self.start_btn_rect)
         pygame.draw.rect(self.screen, (0, 255, 0), self.start_btn_rect, 3) 
-        
         txt_start = self.font_retro_btn.render("COMMENCER", True, BLACK)
         rect_start = txt_start.get_rect(center=self.start_btn_rect.center)
         self.screen.blit(txt_start, rect_start)
 
-        # --- 5. LE MESSAGE DE SENSIBILISATION (NOUVEAU) ---
-        # On définit le texte (Tu peux le changer ici)
         message = "SAVIEZ-VOUS QUE 300 MILLIONS DE PERSONNES NE VOIENT PAS LE DANGER COMME VOUS ?"
-        
-        # On crée le rendu (en Cyan pour faire sérieux/médical)
         txt_msg = self.font_retro_msg.render(message, True, (0, 255, 255))
         rect_msg = txt_msg.get_rect(center=(SCREEN_WIDTH//2, SCREEN_HEIGHT - 30))
-        
-        # On l'affiche
         self.screen.blit(txt_msg, rect_msg)
-        # --------------------------------------------------
 
         pygame.display.flip()
 
     def draw(self):
-        # SI ON EST DANS LE MENU, ON DESSINE LE MENU ET ON S'ARRETE LA
         if self.game_state == "MENU":
             self.draw_menu()
             return
+        
+        if self.game_state == "VICTORY":
+            self.draw_victory()
+            return
 
-        # SINON ON DESSINE LE JEU NORMAL
         palette = FILTERS[self.current_filter]
         
         self.screen.fill(palette["bg"])
         self.screen.blit(self.background_surf, (0, 0), special_flags=pygame.BLEND_MULT)
         
-        # Objectifs
         self.screen.blit(self.flag_img, self.flag1_pos)
         self.screen.blit(self.heart_img, self.heart_pos)
         flag_flipped = pygame.transform.flip(self.flag_img, True, False)
         self.screen.blit(flag_flipped, self.flag2_pos)
         
-        # Pièges
+        lvl_txt = self.font.render(f"NIVEAU {self.level_count + 1} / {self.max_levels}", True, WHITE)
+        self.screen.blit(lvl_txt, (10, 10))
+
         show_outline = (self.current_filter == 2)
 
         if self.current_filter != 0: 
