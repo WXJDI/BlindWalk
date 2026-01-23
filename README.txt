@@ -17,7 +17,7 @@ Le joueur doit traverser un terrain miné d'obstacles, mais souffre de "Cécité
 
 ## 2. Mécaniques de Jeu et Filtres
 
-Le gameplay repose sur l'alternance obligatoire entre trois modes de vision simulés via des palettes colorimétriques scientifiques.
+Le gameplay repose sur l'alternance obligatoire entre trois modes de vision (simulés via des palettes colorimétriques scientifiques). Chaque mode révèle certains dangers tout en masquant d'autres.
 
 | Touche | Mode Visuel | Altération Perception | Danger Masqué (Invisible) |
 | :--- | :--- | :--- | :--- |
@@ -25,7 +25,7 @@ Le gameplay repose sur l'alternance obligatoire entre trois modes de vision simu
 | **2** | **Tritanopie** | Bleu/Jaune confondus | Eau (Bleu) |
 | **3** | **Achromatopsie** | Niveaux de gris | Boue (Orange) |
 
-**Condition de défaite :** Si le joueur oublie de vérifier un filtre et entre en collision avec un obstacle invisible, la partie est immédiatement perdue.
+**Condition de défaite :** Si le joueur oublie de vérifier un filtre et entre en collision avec un obstacle invisible, la partie est immédiatement perdue (Game Over).
 
 ---
 
